@@ -10,25 +10,22 @@ import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ListView;
-import android.widget.Toast;
+import android.widget.SeekBar;
+import android.widget.TextView;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
-import butterknife.OnClick;
 import butterknife.OnItemClick;
 
-public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPreparedListener {
+public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPreparedListener, SeekBar.OnSeekBarChangeListener {
 
     @Bind(R.id.listView)
     ListView listView;
@@ -37,28 +34,43 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
     MediaPlayer mMediaPlayer;
 
 
+    @Bind(R.id.seekBar)
+    SeekBar seekBar;
+
+    @Bind(R.id.infoTextView)
+    TextView infoTextView;
+
+
+    @Bind(R.id.playBtn)
+    Button playBtn;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
+        seekBar.setOnSeekBarChangeListener(this);
+
         adapter = new ArrayAdapter<MediaItem>(this, android.R.layout.simple_list_item_1);
         listView.setAdapter(adapter);
-        new Mytask().execute();
+        new ScanTask().execute();
+        mMediaPlayer = new MediaPlayer();
+        new TrackPositionTask().execute();
     }
-
 
 
     @OnItemClick(R.id.listView)
     void onItemClick(ListView listView, View view, int position, long idk) {
         MediaItem item = (MediaItem) listView.getItemAtPosition(position);
-        Toast.makeText(this,item.toString(),Toast.LENGTH_SHORT).show();
+
+        infoTextView.setText(item.title);
+
+        mMediaPlayer.reset();
         long id = item.id;
         Uri contentUri = ContentUris.withAppendedId(
                 android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id);
-
-        mMediaPlayer = new MediaPlayer();
         mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         try {
             mMediaPlayer.setDataSource(getApplicationContext(), contentUri);
@@ -72,10 +84,53 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
     @Override
     public void onPrepared(MediaPlayer mp) {
         mp.start();
+
+        this.seekBar.setProgress(0);
+        this.seekBar.setEnabled(true);
+        this.playBtn.setEnabled(true);
+        this.playBtn.setText("∥");
+
+    }
+
+    @Override
+    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+    }
+
+    @Override
+    public void onStartTrackingTouch(SeekBar seekBar) {
+    }
+
+    @Override
+    public void onStopTrackingTouch(SeekBar seekBar) {
+        int progress = seekBar.getProgress();
+        mMediaPlayer.seekTo(mMediaPlayer.getDuration() * progress / 100);
+    }
+
+    private class TrackPositionTask extends AsyncTask<Void, Double, Void> {
+
+        @Override
+        protected Void doInBackground(Void... params) {
+            while (true) {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    Log.e("fdsf", "error sleep", e);
+                }
+                if (mMediaPlayer.isPlaying()) {
+                    publishProgress(mMediaPlayer.getCurrentPosition() * 1.0 / mMediaPlayer.getDuration());
+                }
+
+            }
+        }
+
+        @Override
+        protected void onProgressUpdate(Double... values) {
+            seekBar.setProgress((int) (values[0] * 100));
+        }
     }
 
 
-    private class Mytask extends AsyncTask<Void, Void, List<MediaItem> > {
+    private class ScanTask extends AsyncTask<Void, Void, List<MediaItem>> {
 
         @Override
         protected List<MediaItem> doInBackground(Void... params) {
@@ -95,7 +150,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
                 do {
                     long thisId = cursor.getLong(idColumn);
                     String thisTitle = cursor.getString(titleColumn);
-                    items.add(new MediaItem(thisId,thisTitle));
+                    items.add(new MediaItem(thisId, thisTitle));
                     Log.i("fdsf", thisId + thisTitle);
                 } while (cursor.moveToNext());
             }
@@ -110,6 +165,5 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
             MainActivity.this.adapter.addAll(longStringMap);
         }
     }
-
 
 }
