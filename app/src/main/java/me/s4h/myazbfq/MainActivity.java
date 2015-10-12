@@ -23,9 +23,10 @@ import java.util.List;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
 import butterknife.OnItemClick;
 
-public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPreparedListener, SeekBar.OnSeekBarChangeListener {
+public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPreparedListener, SeekBar.OnSeekBarChangeListener, MediaPlayer.OnCompletionListener {
 
     @Bind(R.id.listView)
     ListView listView;
@@ -78,6 +79,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
             Log.e("fdf", "setdateasource error", e);
         }
         mMediaPlayer.setOnPreparedListener(this);
+        mMediaPlayer.setOnCompletionListener(this);
         mMediaPlayer.prepareAsync();
     }
 
@@ -85,12 +87,21 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
     public void onPrepared(MediaPlayer mp) {
         mp.start();
 
-        this.seekBar.setProgress(0);
-        this.seekBar.setEnabled(true);
         this.playBtn.setEnabled(true);
-        this.playBtn.setText("∥");
-
+        this.playBtn.setText("pause");
     }
+
+    @OnClick(R.id.playBtn)
+    void playBtnClick(){
+        if(this.mMediaPlayer.isPlaying()){
+            mMediaPlayer.pause();
+            playBtn.setText("play");
+        }else{
+            mMediaPlayer.start();
+            playBtn.setText("pause");
+        }
+    }
+
 
     @Override
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -104,6 +115,11 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
     public void onStopTrackingTouch(SeekBar seekBar) {
         int progress = seekBar.getProgress();
         mMediaPlayer.seekTo(mMediaPlayer.getDuration() * progress / 100);
+    }
+
+    @Override
+    public void onCompletion(MediaPlayer mp) {
+        this.playBtn.setText("play");
     }
 
     private class TrackPositionTask extends AsyncTask<Void, Double, Void> {
