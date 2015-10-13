@@ -1,16 +1,16 @@
 package me.s4h.myazbfq;
 
 
-public class MediaItem {
+public class VideoItem {
     public Long id;
     public String title;
 
-    public MediaItem(Long id, String title) {
+    public VideoItem(Long id, String title) {
         this.id = id;
         this.title = title;
     }
 
-    public  MediaItem(){}
+    public VideoItem(){}
 
     @Override
     public String toString() {

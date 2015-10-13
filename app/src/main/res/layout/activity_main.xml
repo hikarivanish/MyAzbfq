@@ -10,7 +10,12 @@
     tools:context=".MainActivity">
 
     <ListView
-        android:id="@+id/listView"
+        android:id="@+id/audioListView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="20" />
+    <ListView
+        android:id="@+id/videoListView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="20" />

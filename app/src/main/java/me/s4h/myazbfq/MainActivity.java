@@ -2,6 +2,7 @@ package me.s4h.myazbfq;
 
 import android.content.ContentResolver;
 import android.content.ContentUris;
+import android.content.Intent;
 import android.database.Cursor;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
@@ -28,10 +29,14 @@ import butterknife.OnItemClick;
 
 public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPreparedListener, SeekBar.OnSeekBarChangeListener, MediaPlayer.OnCompletionListener {
 
-    @Bind(R.id.listView)
-    ListView listView;
+    @Bind(R.id.audioListView)
+    ListView audioListView;
 
-    ArrayAdapter<MediaItem> adapter;
+    @Bind(R.id.videoListView)
+    ListView videoListView;
+
+    ArrayAdapter<AudioItem> audioListAdapter;
+    ArrayAdapter<VideoItem> videoListAdapter;
     MediaPlayer mMediaPlayer;
 
 
@@ -54,17 +59,27 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
 
         seekBar.setOnSeekBarChangeListener(this);
 
-        adapter = new ArrayAdapter<MediaItem>(this, android.R.layout.simple_list_item_1);
-        listView.setAdapter(adapter);
-        new ScanTask().execute();
+        audioListAdapter = new ArrayAdapter<AudioItem>(this, android.R.layout.simple_list_item_1);
+        audioListView.setAdapter(audioListAdapter);
+
+        videoListAdapter = new ArrayAdapter<VideoItem>(this, android.R.layout.simple_list_item_1);
+        videoListView.setAdapter(videoListAdapter);
+
+        new AudioScanTask().execute();
+        new VideoScanTask().execute();
+
         mMediaPlayer = new MediaPlayer();
+        mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        mMediaPlayer.setOnPreparedListener(this);
+        mMediaPlayer.setOnCompletionListener(this);
+
         new TrackPositionTask().execute();
     }
 
 
-    @OnItemClick(R.id.listView)
-    void onItemClick(ListView listView, View view, int position, long idk) {
-        MediaItem item = (MediaItem) listView.getItemAtPosition(position);
+    @OnItemClick(R.id.audioListView)
+    void onAudioItemClick(ListView listView, View view, int position, long idk) {
+        AudioItem item = (AudioItem) listView.getItemAtPosition(position);
 
         infoTextView.setText(item.title);
 
@@ -72,15 +87,24 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
         long id = item.id;
         Uri contentUri = ContentUris.withAppendedId(
                 android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id);
-        mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         try {
             mMediaPlayer.setDataSource(getApplicationContext(), contentUri);
         } catch (IOException e) {
             Log.e("fdf", "setdateasource error", e);
         }
-        mMediaPlayer.setOnPreparedListener(this);
-        mMediaPlayer.setOnCompletionListener(this);
         mMediaPlayer.prepareAsync();
+    }
+
+    @OnItemClick(R.id.videoListView)
+    void onVideoItemCLick(ListView listView, View view, int position, long idk) {
+        VideoItem item = (VideoItem) listView.getItemAtPosition(position);
+        Uri contentUri = ContentUris.withAppendedId(
+                android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI, item.id);
+
+        Intent intent = new Intent(this, VideoPlayActivity.class);
+        intent.putExtra(VideoPlayActivity.KEY_URL, contentUri.toString());
+        this.startActivity(intent);
+
     }
 
     @Override
@@ -92,11 +116,11 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
     }
 
     @OnClick(R.id.playBtn)
-    void playBtnClick(){
-        if(this.mMediaPlayer.isPlaying()){
+    void playBtnClick() {
+        if (this.mMediaPlayer.isPlaying()) {
             mMediaPlayer.pause();
             playBtn.setText("play");
-        }else{
+        } else {
             mMediaPlayer.start();
             playBtn.setText("pause");
         }
@@ -146,11 +170,11 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
     }
 
 
-    private class ScanTask extends AsyncTask<Void, Void, List<MediaItem>> {
+    private class AudioScanTask extends AsyncTask<Void, Void, List<AudioItem>> {
 
         @Override
-        protected List<MediaItem> doInBackground(Void... params) {
-            List<MediaItem> items = new ArrayList<>();
+        protected List<AudioItem> doInBackground(Void... params) {
+            List<AudioItem> items = new ArrayList<>();
             ContentResolver contentResolver = MainActivity.this.getContentResolver();
             Uri uri = android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
             Cursor cursor = contentResolver.query(uri, null, null, null, null);
@@ -166,7 +190,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
                 do {
                     long thisId = cursor.getLong(idColumn);
                     String thisTitle = cursor.getString(titleColumn);
-                    items.add(new MediaItem(thisId, thisTitle));
+                    items.add(new AudioItem(thisId, thisTitle));
                     Log.i("fdsf", thisId + thisTitle);
                 } while (cursor.moveToNext());
             }
@@ -177,9 +201,44 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
         }
 
         @Override
-        protected void onPostExecute(List<MediaItem> longStringMap) {
-            MainActivity.this.adapter.addAll(longStringMap);
+        protected void onPostExecute(List<AudioItem> longStringMap) {
+            MainActivity.this.audioListAdapter.addAll(longStringMap);
         }
     }
 
+    private class VideoScanTask extends AsyncTask<Void, Void, List<VideoItem>> {
+
+        @Override
+        protected List<VideoItem> doInBackground(Void... params) {
+            List<VideoItem> items = new ArrayList<>();
+            ContentResolver contentResolver = MainActivity.this.getContentResolver();
+            Uri uri = android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
+            Cursor cursor = contentResolver.query(uri, null, null, null, null);
+            if (cursor == null) {
+                // query failed, handle error.
+                Log.e("fdsf", "error occurred");
+            } else if (!cursor.moveToFirst()) {
+                // no media on the device
+                Log.i("fdwef", "no media found");
+            } else {
+                int titleColumn = cursor.getColumnIndex(android.provider.MediaStore.Video.Media.TITLE);
+                int idColumn = cursor.getColumnIndex(android.provider.MediaStore.Video.Media._ID);
+                do {
+                    long thisId = cursor.getLong(idColumn);
+                    String thisTitle = cursor.getString(titleColumn);
+                    items.add(new VideoItem(thisId, thisTitle));
+                    Log.i("fdsf", thisId + thisTitle);
+                } while (cursor.moveToNext());
+            }
+            if (cursor != null) {
+                cursor.close();
+            }
+            return items;
+        }
+
+        @Override
+        protected void onPostExecute(List<VideoItem> longStringMap) {
+            MainActivity.this.videoListAdapter.addAll(longStringMap);
+        }
+    }
 }
