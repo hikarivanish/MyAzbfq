@@ -1,11 +1,14 @@
 package me.s4h.myazbfq;
 
 import android.app.ProgressDialog;
+import android.graphics.Color;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.MediaController;
 import android.widget.Toast;
@@ -33,6 +36,11 @@ public class VideoPlayActivity extends AppCompatActivity implements MediaPlayer.
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        getWindow().getDecorView().setBackgroundColor(Color.BLACK);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
         super.onCreate(savedInstanceState);
 
         url = getIntent().getStringExtra(KEY_URL);
@@ -46,7 +54,8 @@ public class VideoPlayActivity extends AppCompatActivity implements MediaPlayer.
             return;
         }
 
-        setTheme(android.R.style.Theme_NoTitleBar_Fullscreen);
+//        setTheme(android.R.style.Theme_Light_NoTitleBar_Fullscreen);
+
 
         videoView = new VideoView(this);
         videoView.setVideoURI(Uri.parse(url));
@@ -61,7 +70,7 @@ public class VideoPlayActivity extends AppCompatActivity implements MediaPlayer.
         videoView.setMediaController(mc);
 
         llMain = new LinearLayout(this);
-        llMain.setGravity(Gravity.CENTER_VERTICAL);
+        llMain.setGravity(Gravity.CENTER);
         llMain.setOrientation(LinearLayout.VERTICAL);
         llMain.setLayoutParams(params);
 

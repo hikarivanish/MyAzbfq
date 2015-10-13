@@ -21,6 +21,7 @@
             </intent-filter>
         </activity>
         <activity
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
             android:name=".VideoPlayActivity"
             android:label="@string/title_activity_video">
         </activity>
