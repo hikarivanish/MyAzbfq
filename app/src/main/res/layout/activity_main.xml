@@ -13,18 +13,39 @@
         android:id="@+id/audioListView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="20" />
+        android:layout_weight="18" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="4"
+        android:orientation="horizontal">
+
+        <TextView
+            android:gravity="center"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="audio∧" />
+        <TextView
+            android:gravity="center"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="video∨" />
+    </LinearLayout>
+
     <ListView
         android:id="@+id/videoListView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="20" />
+        android:layout_weight="18" />
 
     <SeekBar
         android:id="@+id/seekBar"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="2"
+        android:layout_weight="3"
         android:max="100" />
 
     <LinearLayout
@@ -34,19 +55,19 @@
         android:orientation="horizontal">
 
         <TextView
-            android:textSize="20sp"
             android:id="@+id/infoTextView"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="5"
-            android:text="No Music Is Playing" />
+            android:text="No Music Is Playing"
+            android:textSize="20sp" />
 
         <Button
-            android:enabled="false"
             android:id="@+id/playBtn"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
+            android:enabled="false"
             android:text="&#x25ba;" />
     </LinearLayout>
 </LinearLayout>

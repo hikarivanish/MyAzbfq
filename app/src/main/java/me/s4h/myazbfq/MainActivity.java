@@ -8,6 +8,7 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -26,6 +27,7 @@ import butterknife.Bind;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import butterknife.OnItemClick;
+import butterknife.OnItemLongClick;
 
 public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPreparedListener, SeekBar.OnSeekBarChangeListener, MediaPlayer.OnCompletionListener {
 
@@ -59,10 +61,10 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
 
         seekBar.setOnSeekBarChangeListener(this);
 
-        audioListAdapter = new ArrayAdapter<AudioItem>(this, android.R.layout.simple_list_item_1);
+        audioListAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1);
         audioListView.setAdapter(audioListAdapter);
 
-        videoListAdapter = new ArrayAdapter<VideoItem>(this, android.R.layout.simple_list_item_1);
+        videoListAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1);
         videoListView.setAdapter(videoListAdapter);
 
         new AudioScanTask().execute();
@@ -107,22 +109,32 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
 
     }
 
+
+    //MediaMetadataRetriever
+    @OnItemLongClick(R.id.audioListView)
+    boolean onAudioItemLongClick(ListView listView, View view, int position, long idk) {
+        AudioItem item = (AudioItem) listView.getItemAtPosition(position);
+
+        return false;
+    }
+
+
     @Override
     public void onPrepared(MediaPlayer mp) {
         mp.start();
 
         this.playBtn.setEnabled(true);
-        this.playBtn.setText("pause");
+        this.playBtn.setText("∥");
     }
 
     @OnClick(R.id.playBtn)
     void playBtnClick() {
         if (this.mMediaPlayer.isPlaying()) {
             mMediaPlayer.pause();
-            playBtn.setText("play");
+            playBtn.setText("►");
         } else {
             mMediaPlayer.start();
-            playBtn.setText("pause");
+            playBtn.setText("∥");
         }
     }
 
@@ -143,7 +155,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
 
     @Override
     public void onCompletion(MediaPlayer mp) {
-        this.playBtn.setText("play");
+        this.playBtn.setText("►");
     }
 
     private class TrackPositionTask extends AsyncTask<Void, Double, Void> {
@@ -185,13 +197,18 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
                 // no media on the device
                 Log.i("fdwef", "no media found");
             } else {
-                int titleColumn = cursor.getColumnIndex(android.provider.MediaStore.Audio.Media.TITLE);
-                int idColumn = cursor.getColumnIndex(android.provider.MediaStore.Audio.Media._ID);
+                int titleColumn = cursor.getColumnIndex(MediaStore.Audio.Media.TITLE);
+                int idColumn = cursor.getColumnIndex(MediaStore.Audio.Media._ID);
+                int albumColumn = cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM);
+                int artistColumn = cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST);
                 do {
                     long thisId = cursor.getLong(idColumn);
-                    String thisTitle = cursor.getString(titleColumn);
-                    items.add(new AudioItem(thisId, thisTitle));
-                    Log.i("fdsf", thisId + thisTitle);
+                    String title = cursor.getString(titleColumn);
+                    String album = cursor.getString(albumColumn);
+                    String artist = cursor.getString(artistColumn);
+
+                    items.add(new AudioItem(thisId, title, album, artist));
+                    Log.i("fdsf", thisId + title);
                 } while (cursor.moveToNext());
             }
             if (cursor != null) {
