@@ -13,7 +13,7 @@
         android:id="@+id/audioListView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="18" />
+        android:layout_weight="25" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -22,16 +22,17 @@
         android:orientation="horizontal">
 
         <TextView
-            android:gravity="center"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
+            android:gravity="center"
             android:text="audio∧" />
+
         <TextView
-            android:gravity="center"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
+            android:gravity="center"
             android:text="video∨" />
     </LinearLayout>
 
@@ -39,7 +40,7 @@
         android:id="@+id/videoListView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="18" />
+        android:layout_weight="10" />
 
     <SeekBar
         android:id="@+id/seekBar"
@@ -58,15 +59,27 @@
             android:id="@+id/infoTextView"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="5"
+            android:layout_weight="50"
+            android:ellipsize="marquee"
+            android:singleLine="true"
             android:text="No Music Is Playing"
             android:textSize="20sp" />
+
+        <TextView
+            android:id="@+id/play_progress"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="17"
+            android:gravity="bottom|right"
+            android:padding="10dp"
+            android:singleLine="true"
+            android:text="00:00" />
 
         <Button
             android:id="@+id/playBtn"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="1"
+            android:layout_weight="15"
             android:enabled="false"
             android:text="&#x25ba;" />
     </LinearLayout>

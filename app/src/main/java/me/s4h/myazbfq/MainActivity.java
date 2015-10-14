@@ -30,7 +30,9 @@ import butterknife.OnClick;
 import butterknife.OnItemClick;
 import butterknife.OnItemLongClick;
 
-public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPreparedListener, SeekBar.OnSeekBarChangeListener, MediaPlayer.OnCompletionListener {
+public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPreparedListener,
+        SeekBar.OnSeekBarChangeListener, MediaPlayer.OnCompletionListener {
+    private static final String LIFESYCLE_TAG = "lifesycle_tag--------->";
 
     @Bind(R.id.audioListView)
     ListView audioListView;
@@ -38,7 +40,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
     @Bind(R.id.videoListView)
     ListView videoListView;
 
-    ArrayAdapter<AudioItem> audioListAdapter;
+    AudioListAdapter audioListAdapter;
     ArrayAdapter<VideoItem> videoListAdapter;
     MediaPlayer mMediaPlayer;
 
@@ -53,7 +55,11 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
     @Bind(R.id.playBtn)
     Button playBtn;
 
+    @Bind(R.id.play_progress)
+    TextView playProgressTextView;
+
     boolean activityRunning = false;
+    AudioItem nowPlaying = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,7 +70,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
 
         seekBar.setOnSeekBarChangeListener(this);
 
-        audioListAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1);
+        audioListAdapter = new AudioListAdapter(this);
         audioListView.setAdapter(audioListAdapter);
 
         videoListAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1);
@@ -85,19 +91,19 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
     @Override
     protected void onRestart() {
         super.onRestart();
-        Log.e("fdsf", "onRestart");
+        Log.i(LIFESYCLE_TAG, "onRestart");
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        Log.e("fdsfd", "onStart");
+        Log.i(LIFESYCLE_TAG, "onStart");
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        Log.e("f43ff", "onResume");
+        Log.i(LIFESYCLE_TAG, "onResume");
         activityRunning = true;
         new TrackPositionTask().execute();
     }
@@ -105,39 +111,39 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
     @Override
     protected void onPause() {
         super.onPause();
-        Log.e("ffds", "onPause");
+        Log.i(LIFESYCLE_TAG, "onPause");
         activityRunning = false;
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        Log.e("fdsf", "onStop");
+        Log.i(LIFESYCLE_TAG, "onStop");
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        Log.e("fdsf", "onDestroy");
+        Log.i(LIFESYCLE_TAG, "onDestroy");
         mMediaPlayer.release();
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
         super.onSaveInstanceState(outState, outPersistentState);
-        Log.e("Fds", "onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState)" + outState);
+        Log.i(LIFESYCLE_TAG, "onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState)" + outState);
     }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        Log.e("fdsf", "onSaveInstanceState(Bundle outState)" + outState);
+        Log.i(LIFESYCLE_TAG, "onSaveInstanceState(Bundle outState)" + outState);
     }
 
     @OnItemClick(R.id.audioListView)
     void onAudioItemClick(ListView listView, View view, int position, long idk) {
         AudioItem item = (AudioItem) listView.getItemAtPosition(position);
-
+        nowPlaying = item;
         infoTextView.setText(item.title);
 
         mMediaPlayer.reset();
@@ -200,6 +206,11 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
 
     @Override
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+        if (fromUser && this.nowPlaying != null) {
+            int p = nowPlaying.duration * progress / 100;
+            this.playProgressTextView.setText(String.format("%02d:%02d", p / 60_000, p / 1000 % 60));
+        }
+
     }
 
     @Override
@@ -217,7 +228,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
         this.playBtn.setText("►");
     }
 
-    private class TrackPositionTask extends AsyncTask<Void, Double, Void> {
+    private class TrackPositionTask extends AsyncTask<Void, Integer, Void> {
 
         @Override
         protected Void doInBackground(Void... params) {
@@ -230,7 +241,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
                 }
                 Log.d("fdsf", "TrackPositionTask is tracking");
                 if (MainActivity.this.activityRunning && mMediaPlayer.isPlaying()) {
-                    publishProgress(mMediaPlayer.getCurrentPosition() * 1.0 / mMediaPlayer.getDuration());
+                    publishProgress(mMediaPlayer.getCurrentPosition(), mMediaPlayer.getDuration());
                 }
 
             }
@@ -238,8 +249,9 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
         }
 
         @Override
-        protected void onProgressUpdate(Double... values) {
-            seekBar.setProgress((int) (values[0] * 100));
+        protected void onProgressUpdate(Integer... values) {
+            seekBar.setProgress(values[0] * 100 / values[1]);
+            playProgressTextView.setText(String.format("%02d:%02d", values[0] / 60_000, values[0] / 1000 % 60));
         }
     }
 
@@ -249,34 +261,40 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
         @Override
         protected List<AudioItem> doInBackground(Void... params) {
             Log.i("fsdf", "AudioScanTask.doInBackground");
-            List<AudioItem> items = new ArrayList<>();
             ContentResolver contentResolver = MainActivity.this.getContentResolver();
-            Uri uri = android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-            Cursor cursor = contentResolver.query(uri, null, null, null, null);
-            if (cursor == null) {
-                // query failed, handle error.
-                Log.e("fdsf", "error occurred");
-            } else if (!cursor.moveToFirst()) {
-                // no media on the device
-                Log.i("fdwef", "no media found");
-            } else {
-                int titleColumn = cursor.getColumnIndex(MediaStore.Audio.Media.TITLE);
-                int idColumn = cursor.getColumnIndex(MediaStore.Audio.Media._ID);
-                int albumColumn = cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM);
-                int artistColumn = cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST);
-                do {
-                    long thisId = cursor.getLong(idColumn);
-                    String title = cursor.getString(titleColumn);
-                    String album = cursor.getString(albumColumn);
-                    String artist = cursor.getString(artistColumn);
 
-                    items.add(new AudioItem(thisId, title, album, artist));
-                    Log.i("fdsf", thisId + title);
-                } while (cursor.moveToNext());
+            List<AudioItem> items = new ArrayList<>();
+            //Some audio may be explicitly marked as not being music
+            String selection = MediaStore.Audio.Media.IS_MUSIC + " != 0";
+            String[] projection = {
+                    MediaStore.Audio.Media._ID,
+                    MediaStore.Audio.Media.TITLE,
+                    MediaStore.Audio.Media.ARTIST,
+//                    MediaStore.Audio.Media.DATA,//文件路径
+//                    MediaStore.Audio.Media.DISPLAY_NAME,//文件名
+                    MediaStore.Audio.Media.DURATION,//长度秒
+                    MediaStore.Audio.Media.YEAR,
+                    MediaStore.Audio.Media.ALBUM
+            };
+            Cursor cursor = contentResolver.query(
+                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                    projection,
+                    selection,
+                    null,
+                    null);
+
+            while (cursor.moveToNext()) {
+                items.add(new AudioItem(
+                        cursor.getInt(0),
+                        cursor.getString(1),
+                        cursor.getString(2),
+                        cursor.getInt(3),
+                        cursor.getInt(4),
+                        cursor.getString(5)
+                ));
             }
-            if (cursor != null) {
-                cursor.close();
-            }
+            // see http://androidsnippets.com/list-all-music-files
+            cursor.close();
             return items;
         }
 
