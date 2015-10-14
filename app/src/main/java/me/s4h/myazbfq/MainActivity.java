@@ -8,6 +8,7 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.PersistableBundle;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -52,10 +53,12 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
     @Bind(R.id.playBtn)
     Button playBtn;
 
+    boolean activityRunning = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.e("fdsf", "onCreate");
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
@@ -75,9 +78,61 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
         mMediaPlayer.setOnPreparedListener(this);
         mMediaPlayer.setOnCompletionListener(this);
 
+
+    }
+
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        Log.e("fdsf", "onRestart");
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Log.e("fdsfd", "onStart");
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.e("f43ff", "onResume");
+        activityRunning = true;
         new TrackPositionTask().execute();
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.e("ffds", "onPause");
+        activityRunning = false;
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Log.e("fdsf", "onStop");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.e("fdsf", "onDestroy");
+        mMediaPlayer.release();
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
+        super.onSaveInstanceState(outState, outPersistentState);
+        Log.e("Fds", "onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState)" + outState);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        Log.e("fdsf", "onSaveInstanceState(Bundle outState)" + outState);
+    }
 
     @OnItemClick(R.id.audioListView)
     void onAudioItemClick(ListView listView, View view, int position, long idk) {
@@ -99,6 +154,10 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
 
     @OnItemClick(R.id.videoListView)
     void onVideoItemCLick(ListView listView, View view, int position, long idk) {
+        if (mMediaPlayer.isPlaying()) {
+            mMediaPlayer.pause();
+            this.playBtn.setText("►");
+        }
         VideoItem item = (VideoItem) listView.getItemAtPosition(position);
         Uri contentUri = ContentUris.withAppendedId(
                 android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI, item.id);
@@ -124,7 +183,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
         mp.start();
 
         this.playBtn.setEnabled(true);
-        this.playBtn.setText("∥");
+        this.playBtn.setText("| |");
     }
 
     @OnClick(R.id.playBtn)
@@ -134,7 +193,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
             playBtn.setText("►");
         } else {
             mMediaPlayer.start();
-            playBtn.setText("∥");
+            playBtn.setText("| |");
         }
     }
 
@@ -162,17 +221,20 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
 
         @Override
         protected Void doInBackground(Void... params) {
-            while (true) {
+            Log.i("fdsf", "TrackPositionTask.doInBackground");
+            while (MainActivity.this.activityRunning) {
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     Log.e("fdsf", "error sleep", e);
                 }
-                if (mMediaPlayer.isPlaying()) {
+                Log.d("fdsf", "TrackPositionTask is tracking");
+                if (MainActivity.this.activityRunning && mMediaPlayer.isPlaying()) {
                     publishProgress(mMediaPlayer.getCurrentPosition() * 1.0 / mMediaPlayer.getDuration());
                 }
 
             }
+            return null;
         }
 
         @Override
@@ -186,6 +248,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
 
         @Override
         protected List<AudioItem> doInBackground(Void... params) {
+            Log.i("fsdf", "AudioScanTask.doInBackground");
             List<AudioItem> items = new ArrayList<>();
             ContentResolver contentResolver = MainActivity.this.getContentResolver();
             Uri uri = android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
@@ -227,6 +290,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
 
         @Override
         protected List<VideoItem> doInBackground(Void... params) {
+            Log.i("fsdf", "VideoScanTask.doInBackground");
             List<VideoItem> items = new ArrayList<>();
             ContentResolver contentResolver = MainActivity.this.getContentResolver();
             Uri uri = android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
