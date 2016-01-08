@@ -41,7 +41,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
     ListView videoListView;
 
     AudioListAdapter audioListAdapter;
-    ArrayAdapter<VideoItem> videoListAdapter;
+    VideoListAdapter videoListAdapter;
     MediaPlayer mMediaPlayer;
 
 
@@ -73,7 +73,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
         audioListAdapter = new AudioListAdapter(this);
         audioListView.setAdapter(audioListAdapter);
 
-        videoListAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1);
+        videoListAdapter = new VideoListAdapter(this);
         videoListView.setAdapter(videoListAdapter);
 
         new AudioScanTask().execute();
@@ -322,10 +322,16 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
             } else {
                 int titleColumn = cursor.getColumnIndex(android.provider.MediaStore.Video.Media.TITLE);
                 int idColumn = cursor.getColumnIndex(android.provider.MediaStore.Video.Media._ID);
+                int heightColumn = cursor.getColumnIndex(MediaStore.Video.Media.HEIGHT);
+                int widthColumn = cursor.getColumnIndex(MediaStore.Video.Media.WIDTH);
+                int durationColumn = cursor.getColumnIndex(MediaStore.Video.Media.DURATION);
                 do {
                     long thisId = cursor.getLong(idColumn);
                     String thisTitle = cursor.getString(titleColumn);
-                    items.add(new VideoItem(thisId, thisTitle));
+                    long thisDuration = cursor.getLong(durationColumn);
+                    long thisWidth = cursor.getLong(widthColumn);
+                    long thisHeight = cursor.getLong(heightColumn);
+                    items.add(new VideoItem(thisId, thisTitle,thisHeight,thisWidth,thisDuration));
                     Log.i("fdsf", thisId + thisTitle);
                 } while (cursor.moveToNext());
             }
